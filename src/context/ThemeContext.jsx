@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 const STORAGE_KEY = "devresolve-theme";
 
-const ThemeContext = createContext(undefined);
+const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
@@ -12,7 +12,7 @@ export const ThemeProvider = ({ children }) => {
         return stored;
       }
     } catch {
-      // In case localStorage is blocked
+      // Fallback if localStorage is restricted
     }
     return "system";
   });
@@ -20,9 +20,9 @@ export const ThemeProvider = ({ children }) => {
   const [resolvedTheme, setResolvedTheme] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "dark") return "dark";
-      if (stored === "light") return "light";
+      if (stored === "dark" || stored === "light") return stored;
     } catch {}
+
     if (typeof window !== "undefined") {
       return window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
@@ -36,7 +36,7 @@ export const ThemeProvider = ({ children }) => {
       let activeTheme;
       if (theme === "system") {
         const systemPrefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)",
+          "(prefers-color-scheme: dark)"
         ).matches;
         activeTheme = systemPrefersDark ? "dark" : "light";
       } else {
@@ -59,7 +59,6 @@ export const ThemeProvider = ({ children }) => {
 
     updateTheme();
 
-    // Listen for system preference changes when in 'system' mode
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
       if (theme === "system") {
@@ -81,7 +80,6 @@ export const ThemeProvider = ({ children }) => {
   };
 
   const toggleTheme = () => {
-    // If currently resolved as dark, switch to light; if light, switch to dark
     const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
   };

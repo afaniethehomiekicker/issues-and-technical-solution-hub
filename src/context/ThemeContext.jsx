@@ -1,0 +1,110 @@
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+const STORAGE_KEY = "devresolve-theme";
+
+const ThemeContext = createContext(undefined);
+
+export const ThemeProvider = ({ children }) => {
+  const [theme, setThemeState] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "light" || stored === "dark" || stored === "system") {
+        return stored;
+      }
+    } catch {
+      // In case localStorage is blocked
+    }
+    return "system";
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "dark") return "dark";
+      if (stored === "light") return "light";
+    } catch {}
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+    return "dark";
+  });
+
+  useEffect(() => {
+    const updateTheme = () => {
+      let activeTheme;
+      if (theme === "system") {
+        const systemPrefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        activeTheme = systemPrefersDark ? "dark" : "light";
+      } else {
+        activeTheme = theme;
+      }
+
+      setResolvedTheme(activeTheme);
+
+      const root = document.documentElement;
+      if (activeTheme === "dark") {
+        root.classList.add("dark");
+        root.classList.remove("light");
+        root.style.colorScheme = "dark";
+      } else {
+        root.classList.remove("dark");
+        root.classList.add("light");
+        root.style.colorScheme = "light";
+      }
+    };
+
+    updateTheme();
+
+    // Listen for system preference changes when in 'system' mode
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      if (theme === "system") {
+        updateTheme();
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [theme]);
+
+  const setTheme = (newTheme) => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem(STORAGE_KEY, newTheme);
+    } catch (e) {
+      console.warn("Unable to persist theme to localStorage", e);
+    }
+  };
+
+  const toggleTheme = () => {
+    // If currently resolved as dark, switch to light; if light, switch to dark
+    const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+  };
+
+  return (
+    <ThemeContext.Provider
+      value={{
+        theme,
+        resolvedTheme,
+        isDark: resolvedTheme === "dark",
+        setTheme,
+        toggleTheme,
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
+};

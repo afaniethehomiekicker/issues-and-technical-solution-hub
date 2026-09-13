@@ -1,0 +1,6 @@
+{
+  "name": "DevResolve - Developer Issues & Solutions",
+  "description": "Internal engineering issues and solutions management system with debugging logs, accepted answers, code snippets, and developer reputation tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

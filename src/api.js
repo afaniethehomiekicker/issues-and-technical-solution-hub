@@ -170,13 +170,17 @@ if (!getStorage("reports", null)) setStorage("reports", []);
 if (!getStorage("activities", null)) setStorage("activities", []);
 if (!getStorage("audit_logs", null)) setStorage("audit_logs", []);
 
-// Auth helper
+// Auth helpers
 export function getStoredUserId() {
-  return localStorage.getItem(ACTIVE_USER_KEY) || "usr-ahmed";
+  return localStorage.getItem(ACTIVE_USER_KEY) || null;
 }
 
 export function setStoredUserId(id) {
-  localStorage.setItem(ACTIVE_USER_KEY, id);
+  if (id) {
+    localStorage.setItem(ACTIVE_USER_KEY, id);
+  } else {
+    localStorage.removeItem(ACTIVE_USER_KEY);
+  }
 }
 
 // Client API Mock Engine
@@ -221,10 +225,12 @@ export const api = {
 
   async getMe() {
     const userId = getStoredUserId();
+    if (!userId) return null;
     const users = getStorage("users", []);
     const user = users.find((u) => u.id === userId);
-    return user || users[0];
+    return user || null;
   },
+  
 
   async updateProfile(profileData) {
     const userId = getStoredUserId();

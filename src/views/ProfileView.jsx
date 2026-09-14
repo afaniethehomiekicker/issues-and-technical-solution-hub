@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { History, Medal, Shield, Sparkles, Trophy } from "lucide-react";
+import { History, Medal, Shield, Sparkles, Trophy, Pencil } from "lucide-react";
 import { api } from "../api";
 import { IssueCard } from "../components/IssueCard";
+import { EditProfileModal } from "../components/EditProfileModal";
 
 export const ProfileView = ({
   userId,
@@ -15,30 +16,32 @@ export const ProfileView = ({
   const [repHistory, setRepHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const loadProfile = async () => {
+    setLoading(true);
+    try {
+      const [users, issues] = await Promise.all([
+        api.getUsers(),
+        api.getIssues({ author: userId }),
+      ]);
+      setAllUsers(users || []);
+      const target = users.find((u) => u.id === userId) || users[0];
+      setProfileUser(target || null);
+      setUserIssues(issues || []);
+
+      if (target) {
+        const history = await api.getReputationHistory(target.id);
+        setRepHistory(history || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadProfile() {
-      setLoading(true);
-      try {
-        const [users, issues] = await Promise.all([
-          api.getUsers(),
-          api.getIssues({ author: userId }),
-        ]);
-        setAllUsers(users);
-        const target = users.find((u) => u.id === userId) || users[0];
-        setProfileUser(target);
-        setUserIssues(issues);
-
-        if (target) {
-          const history = await api.getReputationHistory(target.id);
-          setRepHistory(history);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadProfile();
   }, [userId]);
 
@@ -54,6 +57,20 @@ export const ProfileView = ({
   const rankIndex = [...allUsers]
     .sort((a, b) => b.reputation - a.reputation)
     .findIndex((u) => u.id === profileUser.id);
+
+  const isOwnProfile = currentUser?.id === profileUser.id;
+
+  // Safe date parsing for "Joined Date"
+  const rawDate = profileUser.createdAt || profileUser.joinedDate;
+  const formattedJoinedDate = rawDate && !isNaN(new Date(rawDate))
+    ? new Date(rawDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Sep 2026";
+
+  const avatarSrc = profileUser.avatarUrl || profileUser.avatar;
 
   return (
     <div className="space-y-8 pb-16">
@@ -80,7 +97,7 @@ export const ProfileView = ({
                 <span className="font-mono font-bold text-[10px] opacity-80">
                   #{i + 1}
                 </span>
-                <span>{u.name.split(" ")[0]}</span>
+                <span>{u.name ? u.name.split(" ")[0] : u.username}</span>
                 <span className="font-mono text-amber-400 font-bold text-[11px]">
                   {u.reputation}
                 </span>
@@ -95,13 +112,19 @@ export const ProfileView = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="relative">
-              <img
-                src={profileUser.avatar}
-                alt={profileUser.name}
-                className="w-20 h-20 rounded-2xl object-cover ring-2 ring-indigo-500/50 shadow-lg"
-              />
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={profileUser.name}
+                  className="w-20 h-20 rounded-2xl object-cover ring-2 ring-indigo-500/50 shadow-lg"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black text-2xl flex items-center justify-center ring-2 ring-indigo-400/30 shadow-lg">
+                  {profileUser.name ? profileUser.name[0].toUpperCase() : "U"}
+                </div>
+              )}
 
-              {profileUser.role === "admin" && (
+              {profileUser.role === "Admin" && (
                 <span className="absolute -bottom-1 -right-1 p-1 rounded-lg bg-amber-500 text-slate-950 shadow-md">
                   <Shield className="w-3.5 h-3.5 stroke-[3]" />
                 </span>
@@ -114,39 +137,50 @@ export const ProfileView = ({
                   {profileUser.name}
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
-                  {profileUser.role}
+                  {profileUser.role || "Developer"}
                 </span>
               </div>
               <p className="text-xs text-indigo-400 font-mono">
                 @{profileUser.username}
               </p>
               <p className="text-xs text-slate-400">
-                {profileUser.department} • Joined{" "}
-                {new Date(profileUser.createdAt).toLocaleDateString()}
+                {profileUser.department || "Engineering"} • Joined {formattedJoinedDate}
               </p>
             </div>
           </div>
 
-          {/* Standing & Rank Highlight */}
-          <div className="flex items-center gap-4 bg-slate-950/60 border border-slate-800 rounded-2xl p-4 self-start sm:self-auto">
-            <div className="text-center px-2">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">
-                Standing
-              </span>
-              <span className="text-xl font-bold text-white font-mono">
-                #{rankIndex + 1}
-              </span>
+          {/* Standing, Rank Highlight & Edit Button */}
+          <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+            <div className="flex items-center gap-4 bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+              <div className="text-center px-2">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">
+                  Standing
+                </span>
+                <span className="text-xl font-bold text-white font-mono">
+                  #{rankIndex + 1}
+                </span>
+              </div>
+              <div className="w-px h-8 bg-slate-800" />
+              <div className="text-center px-2">
+                <span className="text-[10px] text-amber-400 uppercase tracking-wider block font-semibold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  Reputation
+                </span>
+                <span className="text-xl font-bold text-amber-400 font-mono">
+                  {profileUser.reputation}
+                </span>
+              </div>
             </div>
-            <div className="w-px h-8 bg-slate-800" />
-            <div className="text-center px-2">
-              <span className="text-[10px] text-amber-400 uppercase tracking-wider block font-semibold flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Reputation
-              </span>
-              <span className="text-xl font-bold text-amber-400 font-mono">
-                {profileUser.reputation}
-              </span>
-            </div>
+
+            {isOwnProfile && (
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <Pencil className="w-4 h-4 text-indigo-400" />
+                <span>Edit Profile</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -267,13 +301,15 @@ export const ProfileView = ({
                     className="px-4 py-3 grid grid-cols-12 gap-2 items-center"
                   >
                     <span className="col-span-2 font-mono font-bold text-emerald-400">
-                      +{entry.points} pts
+                      +{entry.points || entry.score || 0} pts
                     </span>
                     <span className="col-span-7 text-slate-200">
-                      {entry.reason}
+                      {entry.reason || entry.action || "Contribution"}
                     </span>
                     <span className="col-span-3 text-right text-slate-500 font-mono text-[11px]">
-                      {new Date(entry.createdAt).toLocaleDateString()}
+                      {entry.createdAt || entry.date
+                        ? new Date(entry.createdAt || entry.date).toLocaleDateString()
+                        : "Sep 2026"}
                     </span>
                   </div>
                 ))
@@ -282,6 +318,17 @@ export const ProfileView = ({
           </div>
         )}
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        currentUser={profileUser}
+        onProfileUpdated={(updated) => {
+          setProfileUser(updated);
+          loadProfile();
+        }}
+      />
     </div>
   );
 };

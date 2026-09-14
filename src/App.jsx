@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { api, getStoredUserId } from "./api";
+import { api, setStoredUserId } from "./api";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { NewIssueModal } from "./components/NewIssueModal";
-import { UserSwitcherModal } from "./components/UserSwitcherModal";
+import { AuthView } from "./views/AuthView";
 import { DashboardView } from "./views/DashboardView";
 import { IssuesListView } from "./views/IssuesListView";
 import { IssueDetailView } from "./views/IssueDetailView";
 import { CategoriesView } from "./views/CategoriesView";
+import { TagsView } from "./views/TagsView";
 import { TrendingView } from "./views/TrendingView";
 import { BookmarksView } from "./views/BookmarksView";
 import { ProfileView } from "./views/ProfileView";
@@ -16,7 +17,6 @@ import { ThemeProvider } from "./context/ThemeContext";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [allUsers, setAllUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
   const [bookmarkCount, setBookmarkCount] = useState(0);
@@ -31,28 +31,20 @@ export default function App() {
 
   // Modals
   const [isNewIssueOpen, setIsNewIssueOpen] = useState(false);
-  const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
 
-  // Initial data load
   const loadInitialData = async () => {
     try {
-      const [users, cats, tgs, bms] = await Promise.all([
-        api.getUsers(),
+      const [cats, tgs, bms] = await Promise.all([
         api.getCategories(),
         api.getTags(),
         api.getBookmarks(),
       ]);
-      setAllUsers(users);
-      setCategories(cats);
-      setTags(tgs);
-      setBookmarkCount(bms.length);
+      setCategories(cats || []);
+      setTags(tgs || []);
+      setBookmarkCount(Array.isArray(bms) ? bms.length : 0);
 
-      const storedId = getStoredUserId();
-      const matched =
-        users.find((u) => u.id === storedId) ||
-        users.find((u) => u.username === "ahmedk") ||
-        users[0];
-      setCurrentUser(matched || null);
+      const me = await api.getMe();
+      setCurrentUser(me || null);
     } catch (err) {
       console.error("Failed to load initial application state", err);
     }
@@ -61,6 +53,11 @@ export default function App() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  const handleLogout = () => {
+    setStoredUserId("");
+    setCurrentUser(null);
+  };
 
   const handleSelectIssue = (issueId) => {
     setSelectedIssueId(issueId);
@@ -100,14 +97,27 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  if (!currentUser) {
+    return (
+      <ThemeProvider>
+        <AuthView
+          onAuthSuccess={(user) => {
+            setCurrentUser(user);
+            loadInitialData();
+          }}
+        />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-white dark:bg-[#000000] text-[#1e293b] dark:text-[#f8fafc] flex flex-col font-sans selection:bg-indigo-500/20 dark:selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200">
-        {/* Fixed Sticky Header */}
+      {/* Replaced blue dark backgrounds with pure black dark:bg-black */}
+      <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors duration-200 flex flex-col font-sans selection:bg-indigo-500/20 dark:selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200">
         <Header
           currentUser={currentUser}
           onOpenNewIssue={() => setIsNewIssueOpen(true)}
-          onOpenUserSwitcher={() => setIsUserSwitcherOpen(true)}
+          onLogout={handleLogout}
           onSelectIssue={handleSelectIssue}
           onNavigate={handleNavigate}
           searchQuery={searchQuery}
@@ -119,9 +129,7 @@ export default function App() {
           }}
         />
 
-        {/* Main Content Layout */}
         <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex gap-8">
-          {/* Left Nav Sidebar */}
           <Sidebar
             currentView={currentView}
             onNavigate={handleNavigate}
@@ -129,7 +137,6 @@ export default function App() {
             bookmarkCount={bookmarkCount}
           />
 
-          {/* View Switcher / Page Surface */}
           <main className="flex-1 min-w-0">
             {currentView === "dashboard" && (
               <DashboardView
@@ -172,6 +179,12 @@ export default function App() {
               />
             )}
 
+            {currentView === "tags" && (
+              <TagsView
+                onSelectTag={handleSelectTag}
+              />
+            )}
+
             {currentView === "trending" && (
               <TrendingView
                 onSelectIssue={handleSelectIssue}
@@ -206,7 +219,6 @@ export default function App() {
           </main>
         </div>
 
-        {/* Global Modals */}
         <NewIssueModal
           isOpen={isNewIssueOpen}
           onClose={() => setIsNewIssueOpen(false)}
@@ -216,17 +228,6 @@ export default function App() {
           }}
           categories={categories}
           tags={tags}
-        />
-
-        <UserSwitcherModal
-          isOpen={isUserSwitcherOpen}
-          onClose={() => setIsUserSwitcherOpen(false)}
-          currentUser={currentUser}
-          allUsers={allUsers}
-          onUserChanged={(u) => {
-            setCurrentUser(u);
-            loadInitialData();
-          }}
         />
       </div>
     </ThemeProvider>

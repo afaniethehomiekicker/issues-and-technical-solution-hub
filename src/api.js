@@ -40,7 +40,13 @@ const DEFAULT_USERS = [
   }
 ];
 
-const DEFAULT_CATEGORIES = [];
+const DEFAULT_CATEGORIES = [
+  { id: "cat-backend", name: "Backend", description: "APIs, Databases, and Server Logic" },
+  { id: "cat-frontend", name: "Frontend", description: "UI Components, React, State Management" },
+  { id: "cat-devops", name: "DevOps", description: "CI/CD, Docker, Deployment, Nginx" },
+  { id: "cat-database", name: "Database", description: "SQL Queries, Migrations, Indexing" },
+];
+
 const DEFAULT_TAGS = [];
 const DEFAULT_ISSUES = [];
 const DEFAULT_SOLUTIONS = [];

@@ -20,7 +20,7 @@ function setStorage(key, value) {
   }
 }
 
-// Initial Mock Seed Data
+// Initial Mock Seed Data - Only single Admin account
 const DEFAULT_USERS = [
   {
     id: "usr-admin",
@@ -40,22 +40,8 @@ const DEFAULT_USERS = [
   }
 ];
 
-const DEFAULT_CATEGORIES = [
-  { id: "cat-backend", name: "Backend", description: "APIs, Databases, and Server Logic" },
-  { id: "cat-frontend", name: "Frontend", description: "UI Components, React, State Management" },
-  { id: "cat-devops", name: "DevOps", description: "CI/CD, Docker, Deployment, Nginx" },
-  { id: "cat-database", name: "Database", description: "SQL Queries, Migrations, Indexing" },
-];
-
-const DEFAULT_TAGS = [
-  { id: "tag-go", name: "Go" },
-  { id: "tag-gin", name: "Gin" },
-  { id: "tag-gorm", name: "GORM" },
-  { id: "tag-react", name: "React" },
-  { id: "tag-postgres", name: "PostgreSQL" },
-  { id: "tag-vite", name: "Vite" },
-];
-
+const DEFAULT_CATEGORIES = [];
+const DEFAULT_TAGS = [];
 const DEFAULT_ISSUES = [];
 const DEFAULT_SOLUTIONS = [];
 const DEFAULT_COMMENTS = [];

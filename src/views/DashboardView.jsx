@@ -23,10 +23,11 @@ export const DashboardView = ({
   const [trendingIssues, setTrendingIssues] = useState([]);
   const [activities, setActivities] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
-  const [adminStats, setAdminStats] = useState(null);
+  const [solutionsCount, setSolutionsCount] = useState(0);
+  const [acceptedCount, setAcceptedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "Admin" || currentUser?.role === "admin";
 
   useEffect(() => {
     async function loadData() {
@@ -38,15 +39,22 @@ export const DashboardView = ({
           api.getActivities(),
           api.getBookmarks(),
         ]);
-        setIssues(issuesData);
-        setTrendingIssues(trendingData);
-        setActivities(actsData);
-        setBookmarks(bmData);
+        setIssues(issuesData || []);
+        setTrendingIssues(trendingData || []);
+        setActivities(actsData || []);
+        setBookmarks(bmData || []);
 
-        if (isAdmin) {
-          const stats = await api.getAdminStats();
-          setAdminStats(stats);
+        // Calculate solutions provided by current user
+        let totalSolutions = 0;
+        let totalAccepted = 0;
+        for (const issue of issuesData || []) {
+          const sols = await api.getSolutions(issue.id);
+          const userSols = sols.filter((s) => s.authorId === currentUser?.id);
+          totalSolutions += userSols.length;
+          totalAccepted += userSols.filter((s) => s.isAccepted).length;
         }
+        setSolutionsCount(totalSolutions);
+        setAcceptedCount(totalAccepted);
       } catch (e) {
         console.error("Error loading dashboard data", e);
       } finally {
@@ -54,17 +62,17 @@ export const DashboardView = ({
       }
     }
     loadData();
-  }, [currentUser, isAdmin]);
+  }, [currentUser]);
 
   // Compute developer stats for active user
   const myIssues = issues.filter((i) => i.authorId === currentUser?.id);
-  const myOpenIssues = myIssues.filter((i) => i.status === "open");
-  const myInDiscussion = myIssues.filter((i) => i.status === "in_discussion");
-  const mySolvedIssues = myIssues.filter((i) => i.status === "solved");
-  const myClosedIssues = myIssues.filter((i) => i.status === "closed");
+  const myOpenIssues = myIssues.filter((i) => i.status === "open" || i.status === "Open");
+  const myInDiscussion = myIssues.filter((i) => i.status === "in_discussion" || i.status === "In Discussion");
+  const mySolvedIssues = myIssues.filter((i) => i.status === "solved" || i.status === "Solved");
+  const myClosedIssues = myIssues.filter((i) => i.status === "closed" || i.status === "Closed");
 
   const solvedRecently = issues
-    .filter((i) => i.status === "solved")
+    .filter((i) => i.status === "solved" || i.status === "Solved")
     .slice(0, 4);
 
   return (
@@ -183,7 +191,7 @@ export const DashboardView = ({
             Solutions
           </span>
           <div className="text-xl font-bold text-indigo-600 dark:text-indigo-300 font-mono">
-            12
+            {solutionsCount}
           </div>
           <span className="text-[10px] text-slate-500 dark:text-zinc-500">
             Provided
@@ -195,7 +203,7 @@ export const DashboardView = ({
             Accepted
           </span>
           <div className="text-xl font-bold text-emerald-600 dark:text-emerald-300 font-mono">
-            4
+            {acceptedCount}
           </div>
           <span className="text-[10px] text-slate-500 dark:text-zinc-500">
             Chosen answers
@@ -208,7 +216,7 @@ export const DashboardView = ({
             Reputation
           </span>
           <div className="text-xl font-bold text-amber-700 dark:text-amber-300 font-mono">
-            {currentUser?.reputation || 485}
+            {currentUser?.reputation || 100}
           </div>
           <span className="text-[10px] text-amber-600 dark:text-amber-400/80">
             Level: Senior
@@ -241,21 +249,27 @@ export const DashboardView = ({
             </div>
 
             <div className="grid grid-cols-1 gap-3.5">
-              {trendingIssues.slice(0, 3).map((issue) => (
-                <IssueCard
-                  key={issue.id}
-                  issue={issue}
-                  isBookmarked={bookmarks.some((b) => b.issueId === issue.id)}
-                  onToggleBookmark={async (id) => {
-                    await api.toggleBookmark(id);
-                    const updated = await api.getBookmarks();
-                    setBookmarks(updated);
-                  }}
-                  onSelect={onSelectIssue}
-                  onSelectTag={onSelectTag}
-                  onSelectCategory={onSelectCategory}
-                />
-              ))}
+              {trendingIssues.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-zinc-400 py-4 text-center">
+                  No trending problems at the moment.
+                </p>
+              ) : (
+                trendingIssues.slice(0, 3).map((issue) => (
+                  <IssueCard
+                    key={issue.id}
+                    issue={issue}
+                    isBookmarked={bookmarks.some((b) => b.issueId === issue.id)}
+                    onToggleBookmark={async (id) => {
+                      await api.toggleBookmark(id);
+                      const updated = await api.getBookmarks();
+                      setBookmarks(updated);
+                    }}
+                    onSelect={onSelectIssue}
+                    onSelectTag={onSelectTag}
+                    onSelectCategory={onSelectCategory}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -277,37 +291,39 @@ export const DashboardView = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {solvedRecently.map((issue) => (
-                <div
-                  key={issue.id}
-                  onClick={() => onSelectIssue(issue.id)}
-                  className="p-4 rounded-2xl bg-white dark:bg-[#121212] hover:bg-slate-50 dark:hover:bg-[#1a1a1a] border border-emerald-200 dark:border-emerald-500/30 hover:border-emerald-300 dark:hover:border-emerald-500/60 transition-all cursor-pointer space-y-2.5 group shadow-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Accepted Fix
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">
-                      #{issue.id}
-                    </span>
+              {solvedRecently.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-zinc-400 py-4 col-span-2 text-center">
+                  No solved issues recorded yet.
+                </p>
+              ) : (
+                solvedRecently.map((issue) => (
+                  <div
+                    key={issue.id}
+                    onClick={() => onSelectIssue(issue.id)}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#121212] hover:bg-slate-50 dark:hover:bg-[#1a1a1a] border border-emerald-200 dark:border-emerald-500/30 hover:border-emerald-300 dark:hover:border-emerald-500/60 transition-all cursor-pointer space-y-2.5 group shadow-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Accepted Fix
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">
+                        #{issue.id}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors line-clamp-2">
+                      {issue.title}
+                    </h4>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-zinc-400">
+                      <span className="font-mono text-indigo-600 dark:text-indigo-300">
+                        {issue.technology || "Core"}
+                      </span>
+                      <span>•</span>
+                      <span>{issue.views} views</span>
+                    </div>
                   </div>
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors line-clamp-2">
-                    {issue.title}
-                  </h4>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-zinc-400">
-                    <span className="font-mono text-indigo-600 dark:text-indigo-300">
-                      {issue.technology || "Core"}
-                    </span>
-                    <span>•</span>
-                    <span>{issue.views} views</span>
-                    <span>•</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-medium">
-                      {issue.solutionCount} solutions
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -357,15 +373,8 @@ export const DashboardView = ({
                       </p>
                       <button
                         onClick={() => {
-                          if (
-                            act.entityType === "issue" ||
-                            act.entityType === "solution"
-                          ) {
-                            onSelectIssue(
-                              act.entityId.startsWith("issue-")
-                                ? act.entityId
-                                : "issue-1024",
-                            );
+                          if (act.entityType === "issue" || act.entityType === "solution") {
+                            onSelectIssue(act.entityId);
                           }
                         }}
                         className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 truncate block text-left font-medium cursor-pointer"
@@ -410,7 +419,7 @@ export const DashboardView = ({
               <div className="space-y-2">
                 {bookmarks.slice(0, 3).map((b) => (
                   <div
-                    key={b.id}
+                    key={b.id || b.issueId}
                     onClick={() => onSelectIssue(b.issueId)}
                     className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#1a1a1a] hover:bg-slate-100 dark:hover:bg-[#222222] border border-slate-200 dark:border-zinc-800 transition-colors cursor-pointer text-xs"
                   >

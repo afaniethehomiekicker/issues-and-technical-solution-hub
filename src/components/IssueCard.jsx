@@ -99,7 +99,10 @@ export const IssueCard = ({
   );
 
   return (
-    <div className="group relative rounded-2xl bg-white dark:bg-[#121212] hover:bg-slate-50/90 dark:hover:bg-[#181818] border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 p-5 transition-all shadow-xs hover:shadow-md dark:shadow-none">
+    <div 
+      onClick={() => onSelect(issue.id)}
+      className="group relative rounded-2xl bg-white dark:bg-[#121212] hover:bg-slate-50/90 dark:hover:bg-[#181818] border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 p-5 transition-all shadow-xs hover:shadow-md dark:shadow-none cursor-pointer"
+    >
       {/* Top row: Status, Priority, Category, Bookmark */}
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -144,18 +147,12 @@ export const IssueCard = ({
       </div>
 
       {/* Title */}
-      <h3
-        onClick={() => onSelect(issue.id)}
-        className="text-base font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors cursor-pointer leading-snug mb-2 line-clamp-2"
-      >
+      <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug mb-2 line-clamp-2">
         {issue.title}
       </h3>
 
       {/* Snippet / Description Preview */}
-      <p
-        onClick={() => onSelect(issue.id)}
-        className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2 mb-3 leading-relaxed cursor-pointer"
-      >
+      <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2 mb-3 leading-relaxed">
         {issue.description}
       </p>
 

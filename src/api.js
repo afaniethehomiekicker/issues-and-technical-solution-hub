@@ -23,35 +23,21 @@ function setStorage(key, value) {
 // Initial Mock Seed Data
 const DEFAULT_USERS = [
   {
-    id: "usr-ahmed",
-    name: "Ahmed Khan",
-    username: "ahmedkhan",
-    email: "ahmed@example.com",
+    id: "usr-admin",
+    name: "System Admin",
+    username: "admin",
+    email: "admin",
+    password: "admin",
     role: "Admin",
-    bio: "Full-Stack Engineer & System Architect",
-    skills: ["Go", "Gin", "GORM", "PostgreSQL", "React"],
-    reputation: 485,
-    issuesPosted: 24,
-    solutionsProvided: 52,
-    acceptedSolutions: 19,
+    bio: "DevResolve System Administrator",
+    skills: ["Go", "React", "PostgreSQL", "System Architecture"],
+    reputation: 100,
+    issuesPosted: 0,
+    solutionsProvided: 0,
+    acceptedSolutions: 0,
     status: "active",
-    joinedDate: "2026-01-15",
-  },
-  {
-    id: "usr-hassan",
-    name: "Hassan Ali",
-    username: "hassan",
-    email: "hassan@example.com",
-    role: "Developer",
-    bio: "Frontend Specialist & UI/UX Enthusiast",
-    skills: ["React", "TypeScript", "Tailwind CSS", "Vite"],
-    reputation: 310,
-    issuesPosted: 12,
-    solutionsProvided: 28,
-    acceptedSolutions: 10,
-    status: "active",
-    joinedDate: "2026-02-01",
-  },
+    joinedDate: new Date().toISOString().split("T")[0],
+  }
 ];
 
 const DEFAULT_CATEGORIES = [
@@ -70,92 +56,9 @@ const DEFAULT_TAGS = [
   { id: "tag-vite", name: "Vite" },
 ];
 
-const DEFAULT_ISSUES = [
-  {
-    id: "issue-1024",
-    title: "GORM Preload not loading nested relationship",
-    description: "When attempting to preload customer records alongside invoice data, the customer object returns empty.",
-    category: "Backend",
-    categoryId: "cat-backend",
-    tags: ["Go", "Gin", "GORM"],
-    language: "Go",
-    technology: "Go / Gin / GORM",
-    environment: {
-      os: "Ubuntu 24.04 LTS",
-      language: "Go 1.25",
-      framework: "Gin v1.10.0",
-      database: "PostgreSQL 17",
-      browser: "Firefox",
-    },
-    error: "No error returned, but customer object remains empty in payload.",
-    expectedBehavior: "Customer details should be nested within the invoice JSON output.",
-    actualBehavior: "Invoice is returned but Customer is empty.",
-    stepsToReproduce: "1. Query invoice\n2. Preload customer\n3. Check output",
-    codeSnippet: `db.Preload("Customer").Where("id = ?", invoiceID).First(&invoice)`,
-    priority: "High",
-    status: "Open",
-    authorId: "usr-ahmed",
-    author: { id: "usr-ahmed", name: "Ahmed Khan", username: "ahmedkhan" },
-    views: 245,
-    likes: 37,
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "issue-1025",
-    title: "React infinite re-render loop in dashboard state context",
-    description: "Updating active user filters inside useEffect triggers infinite component re-renders.",
-    category: "Frontend",
-    categoryId: "cat-frontend",
-    tags: ["React", "Vite"],
-    language: "JavaScript",
-    technology: "React / Vite",
-    environment: {
-      os: "Windows 11",
-      language: "JavaScript",
-      framework: "React 19",
-      browser: "Chrome",
-    },
-    error: "Maximum update depth exceeded.",
-    expectedBehavior: "Filters should apply once on initial mount.",
-    actualBehavior: "Component continuously re-renders until crash.",
-    stepsToReproduce: "1. Mount dashboard\n2. Trigger filter action",
-    codeSnippet: `useEffect(() => {\n  setFilters(prev => ({ ...prev, active: true }));\n}, [filters]);`,
-    priority: "Urgent",
-    status: "In Discussion",
-    authorId: "usr-hassan",
-    author: { id: "usr-hassan", name: "Hassan Ali", username: "hassan" },
-    views: 180,
-    likes: 19,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
-
-const DEFAULT_SOLUTIONS = [
-  {
-    id: "sol-101",
-    issueId: "issue-1024",
-    authorId: "usr-hassan",
-    author: { id: "usr-hassan", name: "Hassan Ali", username: "hassan" },
-    content: "Ensure the foreign key relationship is explicitly named in the struct tag: `gorm:\"foreignKey:CustomerID\"`.",
-    isAccepted: false,
-    likes: 12,
-    createdAt: new Date(Date.now() - 43200000).toISOString(),
-  },
-];
-
-const DEFAULT_COMMENTS = [
-  {
-    id: "cmt-201",
-    issueId: "issue-1024",
-    authorId: "usr-ahmed",
-    author: { id: "usr-ahmed", name: "Ahmed Khan", username: "ahmedkhan" },
-    content: "I checked the API response directly and the foreign key matches in PostgreSQL.",
-    parentCommentId: null,
-    createdAt: new Date(Date.now() - 21600000).toISOString(),
-  },
-];
+const DEFAULT_ISSUES = [];
+const DEFAULT_SOLUTIONS = [];
+const DEFAULT_COMMENTS = [];
 
 // Seed storage if empty
 if (!getStorage("users", null)) setStorage("users", DEFAULT_USERS);
@@ -164,7 +67,7 @@ if (!getStorage("tags", null)) setStorage("tags", DEFAULT_TAGS);
 if (!getStorage("issues", null)) setStorage("issues", DEFAULT_ISSUES);
 if (!getStorage("solutions", null)) setStorage("solutions", DEFAULT_SOLUTIONS);
 if (!getStorage("comments", null)) setStorage("comments", DEFAULT_COMMENTS);
-if (!getStorage("bookmarks", null)) setStorage("bookmarks", ["issue-1024"]);
+if (!getStorage("bookmarks", null)) setStorage("bookmarks", []);
 if (!getStorage("notifications", null)) setStorage("notifications", []);
 if (!getStorage("reports", null)) setStorage("reports", []);
 if (!getStorage("activities", null)) setStorage("activities", []);
@@ -193,7 +96,7 @@ export const api = {
   async login(identifier, password) {
     const users = getStorage("users", []);
     const user = users.find(
-      (u) => u.email === identifier || u.username === identifier
+      (u) => (u.email === identifier || u.username === identifier) && u.password === password
     );
     if (!user) throw new Error("Invalid username/email or password");
     setStoredUserId(user.id);
@@ -207,6 +110,7 @@ export const api = {
       name: userData.name || userData.username,
       username: userData.username,
       email: userData.email,
+      password: userData.password,
       role: "Developer",
       bio: userData.bio || "",
       skills: userData.skills || [],
@@ -230,7 +134,6 @@ export const api = {
     const user = users.find((u) => u.id === userId);
     return user || null;
   },
-  
 
   async updateProfile(profileData) {
     const userId = getStoredUserId();
@@ -268,8 +171,7 @@ export const api = {
 
   async getReputationHistory(userId) {
     return [
-      { id: "rep-1", action: "Account creation", score: +10, date: "2026-01-15" },
-      { id: "rep-2", action: "Accepted solution", score: +25, date: "2026-02-10" },
+      { id: "rep-1", action: "Account creation", score: +10, date: new Date().toISOString().split("T")[0] }
     ];
   },
 

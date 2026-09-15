@@ -34,14 +34,16 @@ export const Sidebar = ({
   ];
 
   return (
-    <aside className="w-64 shrink-0 hidden md:block">
-      <div className="sticky top-20 space-y-6">
+    <aside className="w-full md:w-64 shrink-0">
+      <div className="md:sticky md:top-20 space-y-4 md:space-y-6">
         {/* Main Navigation */}
-        <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-zinc-800 rounded-2xl p-3 shadow-xs">
-          <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 font-mono">
+        <div className="bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-2xl p-2.5 sm:p-3 shadow-xs dark:shadow-none">
+          <div className="hidden md:block px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 font-mono">
             Navigation
           </div>
-          <nav className="space-y-1">
+
+          {/* Horizontal scrollbar on Mobile/Tablet (< md), vertical stack on Desktop (>= md) */}
+          <nav className="flex flex-row md:flex-col overflow-x-auto md:overflow-visible pb-1 md:pb-0 gap-1.5 md:gap-1 scrollbar-none">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -49,34 +51,39 @@ export const Sidebar = ({
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  className={`flex-none md:w-full flex items-center justify-between px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/25"
-                      : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1c1c1c]"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <Icon
-                      className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500 dark:text-zinc-400"}`}
+                      className={`w-4 h-4 shrink-0 ${
+                        isActive ? "text-white" : "text-slate-500 dark:text-zinc-400"
+                      }`}
                     />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30">
-                      {item.badge}
-                    </span>
-                  )}
-                  {item.count !== undefined && item.count > 0 && (
-                    <span
-                      className={`text-xs font-mono px-1.5 py-0.2 rounded-full ${
-                        isActive
-                          ? "bg-indigo-700 text-white"
-                          : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400"
-                      }`}
-                    >
-                      {item.count}
-                    </span>
-                  )}
+
+                  <div className="flex items-center gap-1.5 ml-2">
+                    {item.badge && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30">
+                        {item.badge}
+                      </span>
+                    )}
+                    {item.count !== undefined && item.count > 0 && (
+                      <span
+                        className={`text-[11px] font-mono px-1.5 py-0.2 rounded-full ${
+                          isActive
+                            ? "bg-indigo-700 text-white"
+                            : "bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"
+                        }`}
+                      >
+                        {item.count}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -85,21 +92,21 @@ export const Sidebar = ({
 
         {/* Admin Navigation */}
         {isAdmin && (
-          <div className="bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-3 shadow-xs">
-            <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 font-mono">
+          <div className="bg-amber-50/80 dark:bg-zinc-950 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-2.5 sm:p-3 shadow-xs dark:shadow-none">
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 font-mono">
               <Shield className="w-3.5 h-3.5" />
               <span>Admin Management</span>
             </div>
-            <nav className="space-y-1">
+            <nav className="mt-1">
               <button
                 onClick={() => onNavigate("admin")}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                   currentView === "admin"
                     ? "bg-amber-500 text-slate-950 font-semibold shadow-sm shadow-amber-500/30"
-                    : "text-amber-800 dark:text-amber-300/80 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                    : "text-amber-800 dark:text-amber-300/80 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-zinc-900"
                 }`}
               >
-                <Shield className="w-4 h-4" />
+                <Shield className="w-4 h-4 shrink-0" />
                 <span>Control Center</span>
               </button>
             </nav>
@@ -108,14 +115,14 @@ export const Sidebar = ({
 
         {/* Quick Reputation Card for Active User */}
         {currentUser && (
-          <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 text-xs space-y-2 shadow-xs">
+          <div className="hidden sm:block bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 text-xs space-y-2 shadow-xs dark:shadow-none">
             <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
               <span>Your Developer Standing</span>
               <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">
                 Rank #2
               </span>
             </div>
-            <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-indigo-500 to-amber-400 h-full rounded-full"
                 style={{

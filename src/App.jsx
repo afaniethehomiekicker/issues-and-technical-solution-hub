@@ -32,6 +32,16 @@ export default function App() {
   // Modals
   const [isNewIssueOpen, setIsNewIssueOpen] = useState(false);
 
+  // Initialize persistent theme preference on app mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("devresolve_theme") || "dark";
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
   const loadInitialData = async () => {
     try {
       const [cats, tgs, bms] = await Promise.all([
@@ -112,8 +122,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      {/* Replaced blue dark backgrounds with pure black dark:bg-black */}
-      <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors duration-200 flex flex-col font-sans selection:bg-indigo-500/20 dark:selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200">
+      <div className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors duration-200 flex flex-col font-sans selection:bg-indigo-500/20 dark:selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200 overflow-x-hidden">
         <Header
           currentUser={currentUser}
           onOpenNewIssue={() => setIsNewIssueOpen(true)}
@@ -129,7 +138,8 @@ export default function App() {
           }}
         />
 
-        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex gap-8">
+        {/* Responsive layout container: Stacks vertically on mobile/tablet (flex-col), side-by-side on desktop (md:flex-row) */}
+        <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-6 md:gap-8 min-w-0">
           <Sidebar
             currentView={currentView}
             onNavigate={handleNavigate}
@@ -137,7 +147,7 @@ export default function App() {
             bookmarkCount={bookmarkCount}
           />
 
-          <main className="flex-1 min-w-0">
+          <main className="flex-1 min-w-0 w-full">
             {currentView === "dashboard" && (
               <DashboardView
                 currentUser={currentUser}
